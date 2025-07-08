@@ -59,7 +59,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c87f10e8f9c7f284eaf417c196efeb16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _slideSpeedSetting: {fileID: 11400000, guid: 35b3cf64736a1d0488d51d9cae57d703, type: 2}
+  _slider: {fileID: 0}
   _stageLength: 10
   _destroyPoint: -11
 --- !u!1001 &94349466698631840
