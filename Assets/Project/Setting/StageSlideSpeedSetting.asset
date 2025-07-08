@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: StageSlideSpeedSetting
   m_EditorClassIdentifier: 
   DefaultSpeed: 20
-  MaxSpeed: 30
-  MinSpeed: 10
+  changeAmount: 10
+  changeTime: 1

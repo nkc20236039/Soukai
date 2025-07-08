@@ -4,6 +4,6 @@ using UnityEngine;
 public class StageSlideSpeedSetting : ScriptableObject
 {
     public float DefaultSpeed;
-    public float MaxSpeed;
-    public float MinSpeed;
+    public float changeAmount;
+    public float changeTime;
 }

@@ -130,7 +130,7 @@ GameObject:
   - component: {fileID: 43018896}
   - component: {fileID: 43018895}
   m_Layer: 0
-  m_Name: StageGenerator
+  m_Name: StageSlider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -151,6 +151,8 @@ MonoBehaviour:
   _startStage: {fileID: 989394996}
   _stageObjects:
   - {fileID: -5391817085309978179, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
+  _player: {fileID: 143338338}
+  _slideSetting: {fileID: 11400000, guid: 35b3cf64736a1d0488d51d9cae57d703, type: 2}
 --- !u!4 &43018896
 Transform:
   m_ObjectHideFlags: 0
@@ -213,9 +215,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da70c242fc4f6e4ebe027a684dd0a45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _speed: 250
-  _minMoveRange: -3
-  _maxMoveRange: 3
+  _speed: 300
+  _minMoveRange: -2.8
+  _maxMoveRange: 2.8
 --- !u!136 &143338339
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -411,6 +413,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5391817085309978179, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
+      propertyPath: _slider
+      value: 
+      objectReference: {fileID: 43018895}
     - target: {fileID: 4392122590023638429, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
       propertyPath: m_Name
       value: Flat (1)
@@ -649,6 +655,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5391817085309978179, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
+      propertyPath: _slider
+      value: 
+      objectReference: {fileID: 43018895}
     - target: {fileID: 4392122590023638429, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
       propertyPath: m_Name
       value: Flat (4)
@@ -706,6 +716,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5391817085309978179, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
+      propertyPath: _slider
+      value: 
+      objectReference: {fileID: 43018895}
     - target: {fileID: 4392122590023638429, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
       propertyPath: m_Name
       value: Flat (3)
@@ -763,6 +777,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5391817085309978179, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
+      propertyPath: _slider
+      value: 
+      objectReference: {fileID: 43018895}
     - target: {fileID: 4392122590023638429, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
       propertyPath: m_Name
       value: Flat (5)
@@ -820,6 +838,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5391817085309978179, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
+      propertyPath: _slider
+      value: 
+      objectReference: {fileID: 43018895}
     - target: {fileID: 4392122590023638429, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
       propertyPath: m_Name
       value: Flat (2)
@@ -924,6 +946,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5391817085309978179, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
+      propertyPath: _slider
+      value: 
+      objectReference: {fileID: 43018895}
     - target: {fileID: 4392122590023638429, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
       propertyPath: m_Name
       value: Flat
