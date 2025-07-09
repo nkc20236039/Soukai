@@ -1,8 +1,9 @@
+using LitMotion;
 using R3;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class PlayerMain : MonoBehaviour
+public class PlayerMain : MonoBehaviour, IStatus
 {
     enum FlyState
     {
@@ -14,6 +15,8 @@ public class PlayerMain : MonoBehaviour
 
     [SerializeField]
     private float _speed;
+    [SerializeField]
+    private float _groundOffset;
     [SerializeField]
     private float _minMoveRange;
     [SerializeField]
@@ -30,20 +33,29 @@ public class PlayerMain : MonoBehaviour
     private float _rayMaxDistance;
     [SerializeField]
     private LayerMask _groundLayer;
+    [SerializeField]
+    private int _maxHealth;
 
-    private FlyState _flyState;
+    private int _health;
+    private float _speedAttenuation;
     private float _timer;
+    private float _currentGravity;
+    private FlyState _flyState;
+    private Vector3 _basePosition;
+    private MotionHandle _attenuationMotionHandle;
     private PlayerInput _playerInput;
     private Rigidbody _playerRigidbody;
-    private Vector3 _basePosition;
-
     private ReactiveProperty<float> _forwardInput = new();
+
+    public int Health { get => _health; set => _health = value; }
     public ReadOnlyReactiveProperty<float> ForwardInput => _forwardInput;
 
     private void Start()
     {
+        _health = _maxHealth;
         _flyState = FlyState.Ground;
         _basePosition = transform.position;
+        _speedAttenuation = 1.0f;
         _playerRigidbody = GetComponent<Rigidbody>();
 
         _playerInput = new();
@@ -79,38 +91,56 @@ public class PlayerMain : MonoBehaviour
         }
     }
 
+    public void SetSpeedAttenuation(float attenuation, float freezeTime, float returnTime)
+    {
+        // 移動速度の制限を0~1に抑える
+        _speedAttenuation = Mathf.Clamp01(attenuation);
+
+        // この関数の上書き命令が来た場合、モーションの再生中であればキャンセルする
+        if (_attenuationMotionHandle.IsPlaying())
+        {
+            _attenuationMotionHandle.Cancel();
+        }
+
+        // 減衰を元に戻す
+        _attenuationMotionHandle = LMotion.Create(_speedAttenuation, 1.0f, returnTime)
+            .WithDelay(freezeTime)
+            .Bind(x => _speedAttenuation = x)
+            .AddTo(this);
+    }
+
     private void OnMove(UnityEngine.InputSystem.InputAction.CallbackContext context)
     {
         // 入力を取得
         var input = context.ReadValue<Vector2>();
         // 入力に応じた左右移動
         var velocity = _playerRigidbody.linearVelocity;
-        velocity.x = input.x * _speed * Time.deltaTime;
+        velocity.x = input.x * _speed * _speedAttenuation;
         _playerRigidbody.linearVelocity = velocity;
         // 前後の入力を読み取る
-        _forwardInput.Value = input.y;
+        _forwardInput.Value = input.y * _speedAttenuation;
     }
 
     private void OnJump(UnityEngine.InputSystem.InputAction.CallbackContext context)
     {
-        UnityEngine.Debug.Log($"{IsGround()}");
         // 現在地面にいたら
-        if (_flyState == FlyState.Ground && IsGround())
+        if (_flyState == FlyState.Ground && IsGround(out _))
         {
             _flyState = FlyState.Jump;
         }
     }
 
-    private bool IsGround()
+    private bool IsGround(out RaycastHit hitInfo)
     {
         var position = transform.position;
-        position.y += _rayMaxDistance;
+        var radius = transform.localScale.x * 0.5f;
+        position.y += radius;
 
         return Physics.SphereCast(
             position,
-            transform.localScale.y * 0.5f,
+            radius,
             Vector3.down,
-            out var _,
+            out hitInfo,
             _rayMaxDistance,
             _groundLayer);
     }
@@ -149,7 +179,7 @@ public class PlayerMain : MonoBehaviour
         _timer += Time.deltaTime;
 
         // 滞空中に地面についた場合
-        if (IsGround())
+        if (IsGround(out _))
         {
             _timer = 0;
             _flyState = FlyState.Ground;
@@ -166,12 +196,30 @@ public class PlayerMain : MonoBehaviour
 
     private void Fall()
     {
-        _playerRigidbody.linearVelocity += Vector3.down * _gravity * Time.deltaTime;
+        _playerRigidbody.linearVelocity += Vector3.down * _gravity;
 
         // 地面についた場合
-        if (IsGround())
+        if (IsGround(out var hitInfo))
         {
+            // 速度と位置を初期化
+            var velocity = _playerRigidbody.linearVelocity;
+            velocity.y = 0.0f;
+            _playerRigidbody.linearVelocity = velocity;
+            var position = _playerRigidbody.position;
+            position.y = hitInfo.point.y + _groundOffset;
+            _playerRigidbody.position = position;
+            // 地面判定に戻す
             _flyState = FlyState.Ground;
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        // 衝突対象がギミックである場合
+        if (other.TryGetComponent<IGimmick>(out var gimmick))
+        {
+            // ギミックの処理を発動する
+            gimmick.Execute(this);
         }
     }
 }
