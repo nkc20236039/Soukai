@@ -1,6 +1,7 @@
 using LitMotion;
 using R3;
 using UnityEngine;
+using UnityEngine.Windows;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMain : MonoBehaviour, IStatus
@@ -37,25 +38,26 @@ public class PlayerMain : MonoBehaviour, IStatus
     private int _maxHealth;
 
     private int _health;
-    private float _speedAttenuation;
     private float _timer;
     private float _currentGravity;
+    private Vector2 _input;
     private FlyState _flyState;
     private Vector3 _basePosition;
     private MotionHandle _attenuationMotionHandle;
     private PlayerInput _playerInput;
     private Rigidbody _playerRigidbody;
+    private ReactiveProperty<float> _speedAttenuation = new(1.0f);
     private ReactiveProperty<float> _forwardInput = new();
 
     public int Health { get => _health; set => _health = value; }
     public ReadOnlyReactiveProperty<float> ForwardInput => _forwardInput;
+    public ReadOnlyReactiveProperty<float> SpeedAttenuation => _speedAttenuation;
 
     private void Start()
     {
         _health = _maxHealth;
         _flyState = FlyState.Ground;
         _basePosition = transform.position;
-        _speedAttenuation = 1.0f;
         _playerRigidbody = GetComponent<Rigidbody>();
 
         _playerInput = new();
@@ -67,6 +69,13 @@ public class PlayerMain : MonoBehaviour, IStatus
 
     private void Update()
     {
+        // 入力に応じた左右移動
+        var velocity = _playerRigidbody.linearVelocity;
+        velocity.x = _input.x * _speed * Time.deltaTime * _speedAttenuation.Value;
+        _playerRigidbody.linearVelocity = velocity;
+        // 前後の入力を読み取る
+        _forwardInput.Value = _input.y;
+
         // 移動位置をレーンからはみ出さないようにする
         var position = transform.position;
         position.x = Mathf.Clamp(position.x, _minMoveRange, _maxMoveRange);
@@ -94,7 +103,7 @@ public class PlayerMain : MonoBehaviour, IStatus
     public void SetSpeedAttenuation(float attenuation, float freezeTime, float returnTime)
     {
         // 移動速度の制限を0~1に抑える
-        _speedAttenuation = Mathf.Clamp01(attenuation);
+        _speedAttenuation.Value = Mathf.Clamp01(attenuation);
 
         // この関数の上書き命令が来た場合、モーションの再生中であればキャンセルする
         if (_attenuationMotionHandle.IsPlaying())
@@ -103,22 +112,16 @@ public class PlayerMain : MonoBehaviour, IStatus
         }
 
         // 減衰を元に戻す
-        _attenuationMotionHandle = LMotion.Create(_speedAttenuation, 1.0f, returnTime)
+        _attenuationMotionHandle = LMotion.Create(_speedAttenuation.Value, 1.0f, returnTime)
             .WithDelay(freezeTime)
-            .Bind(x => _speedAttenuation = x)
+            .Bind(x => _speedAttenuation.Value = x)
             .AddTo(this);
     }
 
     private void OnMove(UnityEngine.InputSystem.InputAction.CallbackContext context)
     {
         // 入力を取得
-        var input = context.ReadValue<Vector2>();
-        // 入力に応じた左右移動
-        var velocity = _playerRigidbody.linearVelocity;
-        velocity.x = input.x * _speed * _speedAttenuation;
-        _playerRigidbody.linearVelocity = velocity;
-        // 前後の入力を読み取る
-        _forwardInput.Value = input.y * _speedAttenuation;
+        _input = context.ReadValue<Vector2>();
     }
 
     private void OnJump(UnityEngine.InputSystem.InputAction.CallbackContext context)
@@ -196,7 +199,7 @@ public class PlayerMain : MonoBehaviour, IStatus
 
     private void Fall()
     {
-        _playerRigidbody.linearVelocity += Vector3.down * _gravity;
+        _playerRigidbody.linearVelocity += Vector3.down * _gravity * Time.deltaTime;
 
         // 地面についた場合
         if (IsGround(out var hitInfo))

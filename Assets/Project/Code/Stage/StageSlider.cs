@@ -35,6 +35,12 @@ public class StageSlider : MonoBehaviour, IStageSlideable
                 _slideSpeedMotionHandle.Cancel();
             }
 
+            var minSpeed = _slideSetting.DefaultSpeed - _slideSetting.changeAmount;
+            if (_slideSpeed <= minSpeed)
+            {
+                return;
+            }
+
             if (input == 0)
             {
                 _slideSpeedMotionHandle = LMotion.Create(
@@ -53,6 +59,16 @@ public class StageSlider : MonoBehaviour, IStageSlideable
                     .Bind(x => _slideSpeed = x)
                     .AddTo(this);
             }
+        });
+
+        _player.SpeedAttenuation.Subscribe(value =>
+        {
+            if (_slideSpeedMotionHandle.IsPlaying())
+            {
+                _slideSpeedMotionHandle.Cancel();
+            }
+
+            _slideSpeed = _slideSetting.DefaultSpeed * value;
         });
 
         _previousStage = _startStage;
