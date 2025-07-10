@@ -12,7 +12,7 @@ public class Spike : MonoBehaviour, IGimmick
     public void Execute(IStatus status)
     {
         // ƒ_ƒ[ƒW‚ğ—^‚¦‚é
-        status.Health--;
+        status.Damage();
         status.SetSpeedAttenuation(_attenuation, _freezeTime, _returnTime);
     }
 }

@@ -1,7 +1,6 @@
 using LitMotion;
 using R3;
 using UnityEngine;
-using UnityEngine.Windows;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMain : MonoBehaviour, IStatus
@@ -37,7 +36,6 @@ public class PlayerMain : MonoBehaviour, IStatus
     [SerializeField]
     private int _maxHealth;
 
-    private int _health;
     private float _timer;
     private float _currentGravity;
     private Vector2 _input;
@@ -46,16 +44,17 @@ public class PlayerMain : MonoBehaviour, IStatus
     private MotionHandle _attenuationMotionHandle;
     private PlayerInput _playerInput;
     private Rigidbody _playerRigidbody;
+    private ReactiveProperty<int> _health = new();
     private ReactiveProperty<float> _speedAttenuation = new(1.0f);
     private ReactiveProperty<float> _forwardInput = new();
 
-    public int Health { get => _health; set => _health = value; }
+    public ReadOnlyReactiveProperty<int> Health => _health;
     public ReadOnlyReactiveProperty<float> ForwardInput => _forwardInput;
     public ReadOnlyReactiveProperty<float> SpeedAttenuation => _speedAttenuation;
 
     private void Start()
     {
-        _health = _maxHealth;
+        _health.Value = _maxHealth;
         _flyState = FlyState.Ground;
         _basePosition = transform.position;
         _playerRigidbody = GetComponent<Rigidbody>();
@@ -71,7 +70,7 @@ public class PlayerMain : MonoBehaviour, IStatus
     {
         // ì¸óÕÇ…âûÇ∂ÇΩç∂âEà⁄ìÆ
         var velocity = _playerRigidbody.linearVelocity;
-        velocity.x = _input.x * _speed * Time.deltaTime * _speedAttenuation.Value;
+        velocity.x = _input.x * _speed * _speedAttenuation.Value;
         _playerRigidbody.linearVelocity = velocity;
         // ëOå„ÇÃì¸óÕÇì«Ç›éÊÇÈ
         _forwardInput.Value = _input.y;
@@ -98,6 +97,16 @@ public class PlayerMain : MonoBehaviour, IStatus
             default:
                 break;
         }
+    }
+
+    public void Kill()
+    {
+        _health.Value = 0;
+    }
+
+    public void Damage()
+    {
+        _health.Value--;
     }
 
     public void SetSpeedAttenuation(float attenuation, float freezeTime, float returnTime)
