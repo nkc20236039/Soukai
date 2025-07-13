@@ -228,6 +228,8 @@ MonoBehaviour:
   _stageObjects:
   - {fileID: -5391817085309978179, guid: bcf1b0b6208e43d48815eaeab5e3f432, type: 3}
   - {fileID: 8742101948922803661, guid: bf08f61d72862ce4bb727916c3b93364, type: 3}
+  - {fileID: -5391817085309978179, guid: 94b521f10a3b30c4e92eb2bc77d969f3, type: 3}
+  - {fileID: -5391817085309978179, guid: abca39a070ee893409becae7d8094ded, type: 3}
   _player: {fileID: 143338338}
   _slideSetting: {fileID: 11400000, guid: 35b3cf64736a1d0488d51d9cae57d703, type: 2}
 --- !u!4 &43018896
@@ -464,7 +466,7 @@ MonoBehaviour:
       inWeight: 0.33333334
       outWeight: 0.16410255
     - serializedVersion: 3
-      time: 0.6
+      time: 0.4
       value: 3
       inSlope: 0
       outSlope: 0
@@ -1155,7 +1157,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 8, y: 1, z: 3}
+  m_Size: {x: 8, y: 1, z: 8}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &832575517
 GameObject:

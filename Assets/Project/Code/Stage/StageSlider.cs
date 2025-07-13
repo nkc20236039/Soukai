@@ -36,7 +36,7 @@ public class StageSlider : MonoBehaviour, IStageSlideable
             }
 
             var minSpeed = _slideSetting.DefaultSpeed - _slideSetting.changeAmount;
-            if (_slideSpeed <= minSpeed)
+            if (_slideSpeed < minSpeed)
             {
                 return;
             }

@@ -80,6 +80,13 @@ public class PlayerMain : MonoBehaviour, IStatus
         position.x = Mathf.Clamp(position.x, _minMoveRange, _maxMoveRange);
         transform.position = position;
 
+        // 地面に触れていない場合
+        if (_flyState == FlyState.Ground && !IsGround(out _))
+        {
+            // 落下状態に移動
+            _flyState = FlyState.Fall;
+        }
+
         // ジャンプが有効な場合
         switch (_flyState)
         {

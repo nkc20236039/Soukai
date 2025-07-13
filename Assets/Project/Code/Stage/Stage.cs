@@ -8,9 +8,8 @@ public class Stage : MonoBehaviour
 
     [SerializeField]
     private float _stageLength;
-    [SerializeField]
-    private float _destroyPoint;
 
+    private float _destroyPoint;
     private IStageSlideable _stageSlider;
 
     public float StageLength => _stageLength;
@@ -27,6 +26,8 @@ public class Stage : MonoBehaviour
         {
             _stageSlider = _slider;
         }
+
+        _destroyPoint = -(_stageLength + 1);
     }
 
     private void Update()
