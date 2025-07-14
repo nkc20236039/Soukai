@@ -44,10 +44,12 @@ public class PlayerMain : MonoBehaviour, IStatus
     private MotionHandle _attenuationMotionHandle;
     private PlayerInput _playerInput;
     private Rigidbody _playerRigidbody;
+    private ReactiveProperty<int> _coin = new();
     private ReactiveProperty<int> _health = new();
     private ReactiveProperty<float> _speedAttenuation = new(1.0f);
     private ReactiveProperty<float> _forwardInput = new();
 
+    public ReadOnlyReactiveProperty<int> Coin => _coin;
     public ReadOnlyReactiveProperty<int> Health => _health;
     public ReadOnlyReactiveProperty<float> ForwardInput => _forwardInput;
     public ReadOnlyReactiveProperty<float> SpeedAttenuation => _speedAttenuation;
@@ -104,6 +106,11 @@ public class PlayerMain : MonoBehaviour, IStatus
             default:
                 break;
         }
+    }
+
+    public void AddCoin(int count)
+    {
+        _coin.Value += count;
     }
 
     public void Kill()
