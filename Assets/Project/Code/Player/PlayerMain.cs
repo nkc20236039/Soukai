@@ -1,5 +1,6 @@
 using LitMotion;
 using R3;
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -24,6 +25,8 @@ public class PlayerMain : MonoBehaviour, IStatus
     [SerializeField]
     private AnimationCurve _jumpCurve;
     [SerializeField]
+    private float _coyoteTime;
+    [SerializeField]
     private float _flyTime;
     [SerializeField]
     private float _gravity;
@@ -35,12 +38,18 @@ public class PlayerMain : MonoBehaviour, IStatus
     private LayerMask _groundLayer;
     [SerializeField]
     private int _maxHealth;
+    [SerializeField]
+    private AudioClip _jumpAudio;
+    [SerializeField]
+    private AudioClip _damageAudio;
 
+
+    private bool _isJumpSoundPlaying;
     private float _timer;
-    private float _currentGravity;
+    private float _jumpedTime;
+    private float _lastGroundTime;
     private Vector2 _input;
     private FlyState _flyState;
-    private Vector3 _basePosition;
     private MotionHandle _attenuationMotionHandle;
     private PlayerInput _playerInput;
     private Rigidbody _playerRigidbody;
@@ -48,17 +57,25 @@ public class PlayerMain : MonoBehaviour, IStatus
     private ReactiveProperty<int> _health = new();
     private ReactiveProperty<float> _speedAttenuation = new(1.0f);
     private ReactiveProperty<float> _forwardInput = new();
+    private event Action _onDead;
 
     public ReadOnlyReactiveProperty<int> Coin => _coin;
     public ReadOnlyReactiveProperty<int> Health => _health;
     public ReadOnlyReactiveProperty<float> ForwardInput => _forwardInput;
     public ReadOnlyReactiveProperty<float> SpeedAttenuation => _speedAttenuation;
 
+    public event Action OnDead
+    {
+        add => _onDead += value;
+        remove => _onDead -= value;
+    }
+
     private void Start()
     {
+        _jumpedTime = float.MinValue;
+        _lastGroundTime = float.MinValue;
         _health.Value = _maxHealth;
         _flyState = FlyState.Ground;
-        _basePosition = transform.position;
         _playerRigidbody = GetComponent<Rigidbody>();
 
         _playerInput = new();
@@ -70,6 +87,8 @@ public class PlayerMain : MonoBehaviour, IStatus
 
     private void Update()
     {
+        var isGround = IsGround(out _);
+
         // 入力に応じた左右移動
         var velocity = _playerRigidbody.linearVelocity;
         velocity.x = _input.x * _speed * _speedAttenuation.Value;
@@ -82,8 +101,23 @@ public class PlayerMain : MonoBehaviour, IStatus
         position.x = Mathf.Clamp(position.x, _minMoveRange, _maxMoveRange);
         transform.position = position;
 
+        // ジャンプの入力許容内で着地した場合
+        float jumpedElapsedTime = Time.time - _jumpedTime;
+        if (_flyState == FlyState.Ground && jumpedElapsedTime < _coyoteTime)
+        {
+            // 状態をジャンプにする
+            _flyState = FlyState.Jump;
+        }
+
+        // 地面に触れている場合
+        if (isGround)
+        {
+            // 最後に地面にいた時間を更新
+            _lastGroundTime = Time.time;
+        }
+
         // 地面に触れていない場合
-        if (_flyState == FlyState.Ground && !IsGround(out _))
+        if (_flyState == FlyState.Ground && !isGround)
         {
             // 落下状態に移動
             _flyState = FlyState.Fall;
@@ -95,6 +129,11 @@ public class PlayerMain : MonoBehaviour, IStatus
             case FlyState.Ground:
                 break;
             case FlyState.Jump:
+                if (!_isJumpSoundPlaying)
+                {
+                    AudioPool.Instance.Play(_jumpAudio, transform.position);
+                    _isJumpSoundPlaying = true;
+                }
                 Jumping();
                 break;
             case FlyState.Fly:
@@ -106,6 +145,11 @@ public class PlayerMain : MonoBehaviour, IStatus
             default:
                 break;
         }
+
+        if (_flyState != FlyState.Jump)
+        {
+            _isJumpSoundPlaying = false;
+        }
     }
 
     public void AddCoin(int count)
@@ -115,12 +159,41 @@ public class PlayerMain : MonoBehaviour, IStatus
 
     public void Kill()
     {
+        // 死亡判定
         _health.Value = 0;
+
+        _onDead?.Invoke();
+
+        // プレイヤーの入力を切る
+        _playerInput.Dispose();
+        _playerInput = null;
+        _input = Vector2.zero;
+
+        // プレイヤーの動きを止める
+        _speedAttenuation.Value = 0.0f;
     }
 
     public void Damage()
     {
+        // 既に体力がなくなっていたら終了
+        if (_health.Value <= 0) { return; }
+
+        AudioPool.Instance.Play(_damageAudio, transform.position);
+
+        // 体力を減らす
         _health.Value--;
+
+        // 体力が0になった場合、死亡処理を行う
+        if (_health.Value <= 0)
+        {
+            Kill();
+        }
+    }
+
+    public void Heal(int healCount)
+    {
+        var health = Mathf.Clamp(_health.Value + healCount, 0, _maxHealth);
+        _health.Value = health;
     }
 
     public void SetSpeedAttenuation(float attenuation, float freezeTime, float returnTime)
@@ -149,8 +222,15 @@ public class PlayerMain : MonoBehaviour, IStatus
 
     private void OnJump(UnityEngine.InputSystem.InputAction.CallbackContext context)
     {
+        _jumpedTime = Time.time;
         // 現在地面にいたら
         if (_flyState == FlyState.Ground && IsGround(out _))
+        {
+            _flyState = FlyState.Jump;
+        }
+
+        var groundElapsedTime = Time.time - _lastGroundTime;
+        if (_flyState == FlyState.Fall && groundElapsedTime < _coyoteTime)
         {
             _flyState = FlyState.Jump;
         }
@@ -173,6 +253,9 @@ public class PlayerMain : MonoBehaviour, IStatus
 
     private void Jumping()
     {
+        // ジャンプ予約を最小値で初期化
+        _jumpedTime = float.MinValue;
+
         // ジャンプの高さをパラメーターから取得
         _timer += Time.deltaTime;
         var lastKey = _jumpCurve[_jumpCurve.length - 1];

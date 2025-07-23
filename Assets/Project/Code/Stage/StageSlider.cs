@@ -1,6 +1,7 @@
 using Cysharp.Threading.Tasks;
 using LitMotion;
 using R3;
+using System;
 using System.Threading;
 using UnityEngine;
 
@@ -13,63 +14,77 @@ public class StageSlider : MonoBehaviour, IStageSlideable
     [SerializeField]
     private PlayerMain _player;
     [SerializeField]
+    private float _stopSpeed;
+    [SerializeField]
     private StageSlideSpeedSetting _slideSetting;
 
     private float _slideSpeed = 20.0f;
     private float _previousStageLength;
     private float _timer;
+    private int _coin;
     private Stage _previousStage;
 
     private MotionHandle _slideSpeedMotionHandle;
+    private IDisposable[] _inputDisposable = new IDisposable[2];
 
     public float SlideSpeed => _slideSpeed;
 
     private void Start()
     {
+        _player.OnDead += Stop;
+        _player.Coin.Subscribe(x =>
+        {
+            _slideSpeed += _slideSetting.LevelupAcceleration * x;
+            _coin = x;
+        });
+
         // プレイヤーの前進入力を購読し速度に適用
-        _player.ForwardInput.Subscribe(input =>
-        {
-            // 新しい入力が来たら現在のモーションをキャンセル
-            if (_slideSpeedMotionHandle.IsPlaying())
+        _inputDisposable[0] = _player.ForwardInput.Subscribe(input =>
             {
-                _slideSpeedMotionHandle.Cancel();
-            }
+                // 新しい入力が来たら現在のモーションをキャンセル
+                if (_slideSpeedMotionHandle.IsPlaying())
+                {
+                    _slideSpeedMotionHandle.Cancel();
+                }
 
-            var minSpeed = _slideSetting.DefaultSpeed - _slideSetting.changeAmount;
-            if (_slideSpeed < minSpeed)
-            {
-                return;
-            }
+                var speed = _slideSetting.DefaultSpeed + _slideSetting.LevelupAcceleration * _coin;
 
-            if (input == 0)
-            {
-                _slideSpeedMotionHandle = LMotion.Create(
-                    _slideSpeed,
-                    _slideSetting.DefaultSpeed,
-                    _slideSetting.changeTime)
-                    .Bind(x => _slideSpeed = x)
-                    .AddTo(this);
-            }
-            else
-            {
-                _slideSpeedMotionHandle = LMotion.Create(
-                    _slideSpeed,
-                    _slideSetting.DefaultSpeed + _slideSetting.changeAmount * input,
-                    _slideSetting.changeTime)
-                    .Bind(x => _slideSpeed = x)
-                    .AddTo(this);
-            }
-        });
+                var minSpeed = speed - _slideSetting.changeAmount;
+                if (_slideSpeed < minSpeed) { return; }
 
-        _player.SpeedAttenuation.Subscribe(value =>
-        {
-            if (_slideSpeedMotionHandle.IsPlaying())
-            {
-                _slideSpeedMotionHandle.Cancel();
-            }
+                if (input == 0)
+                {
+                    _slideSpeedMotionHandle = LMotion.Create(
+                        _slideSpeed,
+                        speed,
+                        _slideSetting.changeTime)
+                        .Bind(x => _slideSpeed = x)
+                        .AddTo(this);
+                }
+                else
+                {
+                    _slideSpeedMotionHandle = LMotion.Create(
+                        _slideSpeed,
+                        speed + _slideSetting.changeAmount * input,
+                        _slideSetting.changeTime)
+                        .Bind(x => _slideSpeed = x)
+                        .AddTo(this);
+                }
+            })
+            .AddTo(this);
 
-            _slideSpeed = _slideSetting.DefaultSpeed * value;
-        });
+        _inputDisposable[1] = _player.SpeedAttenuation.Subscribe(value =>
+            {
+                var speed = _slideSetting.DefaultSpeed + _slideSetting.LevelupAcceleration * _coin;
+
+                if (_slideSpeedMotionHandle.IsPlaying())
+                {
+                    _slideSpeedMotionHandle.Cancel();
+                }
+
+                _slideSpeed = speed * value;
+            })
+            .AddTo(this);
 
         _previousStage = _startStage;
     }
@@ -88,7 +103,7 @@ public class StageSlider : MonoBehaviour, IStageSlideable
 
     private float CreateNewStage()
     {
-        var index = Random.Range(0, _stageObjects.Length);
+        var index = UnityEngine.Random.Range(0, _stageObjects.Length);
 
         // 前のステージにピッタリ重なるように前のステージの最終座標を取得
         var createPosition = _previousStage.transform.position;
@@ -107,7 +122,19 @@ public class StageSlider : MonoBehaviour, IStageSlideable
 
     public void Stop()
     {
+        for (int i = 0; i < _inputDisposable.Length; i++)
+        {
+            _inputDisposable[i]?.Dispose();
+        }
+
+        if (_slideSpeedMotionHandle.IsPlaying())
+        {
+            _slideSpeedMotionHandle.Cancel();
+        }
+
         // 速度を0にする
-        _slideSpeed = 0.0f;
+        LMotion.Create(_slideSpeed, 0.0f, _stopSpeed)
+            .Bind(x => _slideSpeed = x)
+            .AddTo(this);
     }
 }

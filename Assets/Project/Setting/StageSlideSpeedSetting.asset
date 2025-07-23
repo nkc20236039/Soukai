@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: StageSlideSpeedSetting
   m_EditorClassIdentifier: 
   DefaultSpeed: 20
+  LevelupAcceleration: 0.005
   changeAmount: 10
   changeTime: 1

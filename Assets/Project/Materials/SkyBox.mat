@@ -123,6 +123,8 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _XRotation: 0
+    - _XRotationSpeed: 1
     - _ZWrite: 1
     - __dirty: 0
     m_Colors:

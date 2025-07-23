@@ -4,6 +4,7 @@ using UnityEngine;
 public class StageSlideSpeedSetting : ScriptableObject
 {
     public float DefaultSpeed;
+    public float LevelupAcceleration;
     public float changeAmount;
     public float changeTime;
 }

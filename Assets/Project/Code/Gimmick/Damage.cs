@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Spike : MonoBehaviour, IGimmick
+public class Damage : MonoBehaviour, IGimmick
 {
     [SerializeField]
     private float _attenuation;
